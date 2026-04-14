@@ -67,6 +67,7 @@ TraceLogger.WriteActionEnd();
 <param name = "compressionLvl"> The Compression Level to be Used. </param> */
 
 public static void CompressFile(string inputPath, string outputPath, CompressionLevel level,
+                                bool generateTag = true,
                                 Action<long, long> progressCallback = null)
 {
 TraceLogger.Init();
@@ -80,17 +81,19 @@ TraceLogger.WriteDebug($"{inputPath} --> {outputPath} (Level: {level})");
 TraceLogger.WriteActionStart("Opening files...");
 
 using var inFile = FileManager.OpenRead(inputPath);
-using var outFile = FileManager.OpenWrite(outputPath);
+using var outFile = FileManager.Open(outputPath);
 
 TraceLogger.WriteActionEnd();
 
 CompressStream(inFile, outFile, level, progressCallback);
+
+if(generateTag)
+{
 outFile.Seek(0, SeekOrigin.Begin);
 
-TraceLogger.WriteActionStart("Saving Tag...");
 SmfTagCreator.SaveTag(outFile, outputPath);
+}
 
-TraceLogger.WriteActionEnd();
 }
 
 catch(Exception error)
@@ -181,7 +184,8 @@ TraceLogger.WriteActionEnd();
 <param name = "inputPath" > The Path where the File to be Decompressed is Located. </param>
 <param name = "outputPath" > The Location where the Decompressed File will be Saved. </param> */
 
-public static void DecompressFile(string inputPath, string outputPath, bool removeSmfExt = true,
+public static void DecompressFile(string inputPath, string outputPath, 
+                                  bool removeSmfExt = true,
                                   Action<long, long> progressCallback = null)
 {
 TraceLogger.Init();
