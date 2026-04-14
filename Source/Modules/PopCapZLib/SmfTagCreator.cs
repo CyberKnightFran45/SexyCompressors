@@ -1,3 +1,5 @@
+using System;
+using System.Diagnostics;
 using System.IO;
 using BlossomLib.Modules.Security;
 
@@ -7,25 +9,9 @@ namespace SexyCompressors.PopCapZLib
 
 public static class SmfTagCreator
 {
-/** <summary> Generates a SMF Tag File in the Specfied Location. </summary>
+// Compute hash
 
-<param name = "sourcePath"> The Path to the RSB file from which the Tag will be Created. </param>
-<param name = "targetPath"> The Path where to Save the SMF Tag. </param> */
-
-public static void CreateTag(string sourcePath, string targetPath)
-{
-using FileStream sourceStream = FileManager.OpenRead(sourcePath);
-
-SaveTag(sourceStream, targetPath);
-}
-
-/** <summary> Generates a Tag by using MD5 Digest on the SMF File. </summary>
-
-<param name = "sourceStream"> The Stream from which the Tag will be Created. </param>
-
-<returns> The SMF Tag. </returns> */
-
-public static string GenTag(Stream sourceStream)
+private static string ComputeHash(Stream sourceStream)
 {
 using var hOwner = GenericDigest.GetString(sourceStream, "MD5", StringCase.Upper);
 string hash = new(hOwner.AsSpan() );
@@ -42,9 +28,34 @@ public static void SaveTag(Stream sourceStream, string targetPath)
 {
 PathHelper.ChangeExtension(ref targetPath, ".tag.smf");
 
-string tag = GenTag(sourceStream);
+string tag = ComputeHash(sourceStream);
 
 File.WriteAllText(targetPath, tag);
+}
+
+/** <summary> Generates a SMF Tag File in the Specfied Location. </summary>
+
+<param name = "sourcePath"> The Path to the RSB file from which the Tag will be Created. </param>
+<param name = "targetPath"> The Path where to Save the SMF Tag. </param> */
+
+public static void CreateTag(string sourcePath, string targetPath)
+{
+
+try
+{
+TraceLogger.WriteActionStart("Generating smf tag...");
+
+using var sourceStream = FileManager.OpenRead(sourcePath);
+SaveTag(sourceStream, targetPath);
+
+TraceLogger.WriteActionEnd();
+}
+
+catch(Exception error)
+{
+TraceLogger.WriteError(error, "Failed to Create tag");
+}
+
 }
 
 }
